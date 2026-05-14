@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  password          String
+  name              String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Intervals.icu integration
+  intervalsApiKey   String?
+  intervalsAthleteId String?
+
+  activities        Activity[]
+  trainingPlans     TrainingPlan[]
+  journalEntries    JournalEntry[]
+  userProfile       UserProfile?
+
+  @@map("users")
+}
+
+model UserProfile {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Running profile
+  weeklyGoalKm      Float?
+  restingHeartRate  Int?
+  maxHeartRate      Int?
+  currentFTP        Float?    // Functional Threshold Pace (min/km)
+  vo2maxEstimate    Float?
+
+  // Heart rate zones (bpm)
+  hrZone1Max        Int?
+  hrZone2Max        Int?
+  hrZone3Max        Int?
+  hrZone4Max        Int?
+  hrZone5Max        Int?
+
+  // Pace zones (seconds per km)
+  paceZone1Max      Int?
+  paceZone2Max      Int?
+  paceZone3Max      Int?
+  paceZone4Max      Int?
+  paceZone5Max      Int?
+
+  updatedAt         DateTime  @updatedAt
+
+  @@map("user_profiles")
+}
+
+model Activity {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // External IDs
+  intervalsId       String?   @unique
+  garminId          String?   @unique
+  appleId           String?   @unique
+
+  // Core fields
+  name              String
+  type              String    @default("Run") // Run, TrailRun, etc.
+  startTime         DateTime
+  durationSeconds   Int
+  distanceMeters    Float?
+  elevationGainM    Float?
+
+  // Performance
+  avgPaceSecPerKm   Float?
+  avgHeartRate      Int?
+  maxHeartRate      Int?
+  avgCadence        Int?
+  avgPower          Int?
+
+  // Training load
+  tss               Float?    // Training Stress Score
+  ctl               Float?    // Chronic Training Load at this point
+  atl               Float?    // Acute Training Load at this point
+  tsb               Float?    // Training Stress Balance at this point
+
+  // Raw data
+  rawData           Json?     // Full GPS/HR stream if available
+
+  source            String    @default("manual") // intervals, garmin, apple, file
+  createdAt         DateTime  @default(now())
+
+  @@index([userId, startTime])
+  @@map("activities")
+}
+
+model TrainingPlan {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name              String
+  startDate         DateTime
+  endDate           DateTime
+  goalDescription   String?
+  weeklySessionsTarget Int
+  status            String    @default("active") // active, completed, paused
+
+  workouts          PlannedWorkout[]
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@map("training_plans")
+}
+
+model PlannedWorkout {
+  id                String    @id @default(cuid())
+  planId            String
+  plan              TrainingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  // External IDs
+  intervalsEventId  String?   @unique
+
+  scheduledDate     DateTime
+  name              String
+  type              String    @default("Easy Run") // Easy Run, Tempo, Intervals, Long Run, Rest
+  durationMinutes   Int
+  targetDistanceKm  Float?
+  targetPaceSecPerKm Float?
+  description       String?   // Detailed workout instructions
+
+  // Structured workout steps (for export)
+  workoutSteps      Json?
+
+  completed         Boolean   @default(false)
+  completedActivityId String?
+
+  @@index([planId, scheduledDate])
+  @@map("planned_workouts")
+}
+
+model JournalEntry {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date              DateTime
+  content           String
+  mood              Int?      // 1-5 scale
+  energyLevel       Int?      // 1-5 scale
+  sleepHours        Float?
+  stressLevel       Int?      // 1-5 scale
+  lifeTags          String[]  // ["travel", "sick", "high_stress", "race"]
+
+  createdAt         DateTime  @default(now())
+
+  @@index([userId, date])
+  @@map("journal_entries")
+}
