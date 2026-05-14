@@ -1,64 +1,84 @@
 # Løbecoach AI
 
-AI-drevet løbetræner webapp bygget med Next.js, Prisma og Claude/Gemini.
+AI-drevet løbetræner webapp – Next.js, Prisma, Claude/Gemini.
 
-## Funktioner
-- Import løb fra Intervals.icu (direkte via API) eller via GPX/TCX/FIT filer
-- Dashboard med CTL/ATL/TSB belastningskurve og ugentlig kilometre
-- AI-coach chat og statusanalyse (understøtter Claude og Gemini)
-- Træningsplangenerator med push til Intervals.icu
-- Trænernoter med humør, energi, søvn og livshændelser
+---
 
-## Kom i gang
+## Kom i gang lokalt (5 minutter)
 
-### 1. Installer afhængigheder
+### Krav
+- [Node.js 18+](https://nodejs.org)
+- Ingen database-konto nødvendig (bruger SQLite lokalt)
+
+### Trin
+
 ```bash
+# 1. Gå ind i mappen
 cd running-coach
+
+# 2. Installer pakker
 npm install
-```
 
-### 2. Opret database
-Kræver en PostgreSQL-database. Kopier `.env.example` til `.env` og udfyld:
-```bash
+# 3. Opret .env fil
 cp .env.example .env
-# Rediger .env med dine værdier
-```
+# Rediger NEXTAUTH_SECRET til en tilfældig streng (min. 32 tegn)
 
-### 3. Kør database migrations
-```bash
+# 4. Opret databasetabeller
 npm run db:push
-```
 
-### 4. Start udviklingsserver
-```bash
+# 5. Start appen
 npm run dev
 ```
 
-Åbn http://localhost:3000
+Åbn **http://localhost:3000** og opret en konto.
+
+---
+
+## Deploy til Vercel + Neon (gratis)
+
+### 1. Opret gratis PostgreSQL på Neon
+1. Gå til [neon.tech](https://neon.tech) og opret gratis konto
+2. Klik "New Project" → vælg region (EU Central anbefales)
+3. Kopiér **Connection string** (starter med `postgresql://...`)
+
+### 2. Skift database i koden
+I `prisma/schema.prisma`, skift:
+```prisma
+provider = "sqlite"   →   provider = "postgresql"
+```
+
+### 3. Push til Vercel
+1. Push koden til GitHub
+2. Gå til [vercel.com](https://vercel.com) og importer projektet
+3. Tilføj miljøvariabler i Vercel dashboard:
+   - `DATABASE_URL` = din Neon connection string
+   - `NEXTAUTH_URL` = din Vercel URL (f.eks. `https://minapp.vercel.app`)
+   - `NEXTAUTH_SECRET` = tilfældig streng
+   - `ANTHROPIC_API_KEY` eller `GOOGLE_AI_KEY` (valgfri)
+4. Deploy
+
+---
 
 ## Miljøvariabler
 
-| Variabel | Beskrivelse |
+| Variabel | Beskrivelse | Påkrævet |
+|---|---|---|
+| `DATABASE_URL` | `file:./dev.db` (SQLite) eller Neon/Supabase URL | Ja |
+| `NEXTAUTH_URL` | URL til appen | Ja |
+| `NEXTAUTH_SECRET` | Tilfældig hemmelig streng | Ja |
+| `ANTHROPIC_API_KEY` | Claude API nøgle | Nej |
+| `GOOGLE_AI_KEY` | Google Gemini nøgle (gratis tier) | Nej |
+| `AI_PROVIDER` | `auto`, `claude` eller `gemini` | Nej |
+
+---
+
+## Funktioner
+
+| Feature | Beskrivelse |
 |---|---|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `NEXTAUTH_URL` | URL til appen (http://localhost:3000 lokalt) |
-| `NEXTAUTH_SECRET` | Tilfældig streng (generer med `openssl rand -base64 32`) |
-| `ANTHROPIC_API_KEY` | Claude API nøgle (valgfri) |
-| `GOOGLE_AI_KEY` | Google Gemini API nøgle (valgfri, gratis tier) |
-| `AI_PROVIDER` | `auto`, `claude` eller `gemini` (standard: `auto`) |
-
-**Bemærk:** Appen fungerer uden AI-nøgler — kun coach-chatten og analysefunktionen kræver en nøgle.
-
-## Deploy til Vercel
-
-1. Push til GitHub
-2. Import projekt i Vercel
-3. Tilføj miljøvariabler i Vercel dashboard
-4. Brug Railway eller Supabase til PostgreSQL-database
-
-## AI-udbydere
-
-Appen skifter automatisk baseret på hvilken nøgle der er tilgængelig:
-- Har du `ANTHROPIC_API_KEY` → bruger Claude Opus
-- Har du `GOOGLE_AI_KEY` → bruger Gemini 1.5 Flash (gratis tier: 1M tokens/dag)
-- Ingen nøgle → AI-funktioner viser vejledning om at tilføje nøgle
+| **Import fra Intervals.icu** | Sync alle dine løb direkte via API |
+| **Fil-upload** | GPX, TCX, FIT (fra Apple Health/Garmin/Strava) |
+| **Dashboard** | CTL/ATL/TSB belastningskurve, ugentlig km, seneste løb |
+| **AI-coach** | Chat, statusanalyse, anbefalinger (kræver API-nøgle) |
+| **Træningsplan** | AI-genereret program med push til Intervals.icu |
+| **Trænernoter** | Humør, søvn, stress, livshændelser |

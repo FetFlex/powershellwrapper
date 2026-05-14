@@ -3,7 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  // Skift til "postgresql" og sæt DATABASE_URL når du deployer til Neon/Supabase
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -156,7 +157,7 @@ model JournalEntry {
   energyLevel       Int?      // 1-5 scale
   sleepHours        Float?
   stressLevel       Int?      // 1-5 scale
-  lifeTags          String[]  // ["travel", "sick", "high_stress", "race"]
+  lifeTags          String    @default("[]") // JSON array: ["travel", "sick", "high_stress", "race"]
 
   createdAt         DateTime  @default(now())
 
