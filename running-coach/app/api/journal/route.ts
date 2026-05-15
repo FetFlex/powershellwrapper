@@ -29,14 +29,10 @@ export async function POST(req: Request) {
         energyLevel: body.energyLevel,
         sleepHours: body.sleepHours,
         stressLevel: body.stressLevel,
-        lifeTags: JSON.stringify(body.lifeTags ?? []),
+        lifeTags: body.lifeTags ?? [],
       },
     })
-
-    return NextResponse.json({
-      ...entry,
-      lifeTags: JSON.parse(entry.lifeTags as string),
-    }, { status: 201 })
+    return NextResponse.json(entry, { status: 201 })
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.errors[0].message }, { status: 400 })
@@ -55,10 +51,5 @@ export async function GET() {
     take: 50,
   })
 
-  return NextResponse.json({
-    entries: entries.map((e) => ({
-      ...e,
-      lifeTags: JSON.parse(e.lifeTags as string),
-    })),
-  })
+  return NextResponse.json({ entries })
 }
